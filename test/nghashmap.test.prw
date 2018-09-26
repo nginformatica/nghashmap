@@ -60,6 +60,10 @@ Feature _02_Put TestSuite NGHashMap
     ::oMap:Put( 'HELLO', 'MOTTO' )
     ::oMap:Put( 'HELLO', 'WORLD' )
     ::Expect( ::oMap:Length() ):ToBe( 1 )
+
+    // Long keys
+    ::oBigMap:Put( 'THISISAVERYLONGSTRINGRS', 42 )
+    ::Expect( ::oBigMap:Get( 'THISISAVERYLONGSTRINGRS' ) ):ToBe( 42 )
 Return
 
 Feature _03_Get TestSuite NGHashMap

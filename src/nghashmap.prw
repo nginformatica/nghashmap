@@ -199,13 +199,24 @@ Method Hash( cKey ) Class NGHashMap
     Local nIndex
     Local nHash      := 5381
     Local nKeyLength := Len( cKey )
+    Local nNumLength
 
     For nIndex := 1 To nKeyLength
         nChar := Asc( SubStr( cKey, nIndex, 1 ) )
         nHash := nHash * 33 + nChar
     Next
 
-    nHash := Int( nHash % ::nSize + 1 )
+    // There is a bug in AdvPL where an integer value {i} with more than 15
+    // digits with the remainder by {n}, being {i} and {n} naturals, **may**,
+    // eventualy give invalid negative values, so we truncate it to 15 digits
+    #ifndef __HARBOUR__
+    nNumLength := Ceiling( Log10( nHash ) )
+    If nNumLength > 15
+        nHash := nHash / (10 ** (nNumLength - 15))
+    EndIf
+    #endif
+
+    nHash := Max( 1, Int( nHash % ::nSize + 1 ) )
 Return nHash
 
 /**
