@@ -1,3 +1,27 @@
+/**
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2018 NG Informática - TOTVS Software Partner
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #ifdef __HARBOUR__
     #include 'hbclass.ch'
 #else
@@ -31,9 +55,12 @@ Class NGHashMap
      */
     Data cMode
 
-    Method New()
+    Method New( nSize, cMode )
+    Method Normalize()
+
     Method Free()
     Method Get( cKey )
+    Method GetOptional( cKey, xDefault )
     Method Hash( cKey )
     Method Has( cKey )
     Method Keys()
@@ -61,6 +88,22 @@ Method New( nSize, cMode ) Class NGHashMap
 Return Self
 
 /**
+ * Normalizes a key based on the initial configuration
+ *
+ * @param cKey {String} - key to normalize
+ * @returns {String} the normalized key
+ */
+Method Normalize( cKey ) Class NGHashMap
+    If HASHMAP_CMP_IGNORE_CASE $ ::cMode
+        cKey := Upper( cKey )
+    EndIf
+
+    If HASHMAP_CMP_TRIM $ ::cMode
+        cKey := AllTrim( cKey )
+    EndIf
+Return cKey
+
+/**
  * Releases the hashmap memory.
  *
  * @author Marcelo Camargo
@@ -80,9 +123,13 @@ Return Nil
  * @returns either the stored value or NIL
  */
 Method Get( cKey ) Class NGHashMap
-    Local cHashKey := ::Hash( @cKey )
-    Local aBucket  := ::aBuckets[ cHashKey ]
+    Local cHashKey
+    Local aBucket
     Local nIndex
+
+    cKey     := ::Normalize( cKey )
+    cHashKey := ::Hash( cKey )
+    aBucket  := ::aBuckets[ cHashKey ]
 
     For nIndex := 1 To Len( aBucket )
         If aBucket[ nIndex, HASHMAP_KEY ] == cKey
@@ -92,6 +139,31 @@ Method Get( cKey ) Class NGHashMap
 Return Nil
 
 /**
+ * Returns the value stored by a key in the hashmap or the given default value
+ * if the key does not exist. If the value is explicitly NIL, returns itself.
+ *
+ * @author Marcelo Camargo
+ * @param cKey {String} key to lookup
+ * @param xDefault {Mixed} default value
+ * @returns either the stored value or {xDefault}
+ */
+Method GetOptional( cKey, xDefault ) Class NGHashMap
+    Local cHashKey
+    Local aBucket
+    Local nIndex
+
+    cKey     := ::Normalize( cKey )
+    cHashKey := ::Hash( cKey )
+    aBucket  := ::aBuckets[ cHashKey ]
+
+    For nIndex := 1 To Len( aBucket )
+        If aBucket[ nIndex, HASHMAP_KEY ] == cKey
+            Return aBucket[ nIndex, 2 ]
+        EndIf
+    Next
+Return xDefault
+
+/**
  * Returns whether a key exists in a hashmap
  *
  * @author Marcelo Camargo
@@ -99,9 +171,13 @@ Return Nil
  * @returns whether the key is in the hashmap
  */
 Method Has( cKey ) Class NGHashMap
-    Local cHashKey := ::Hash( @cKey )
-    Local aBucket  := ::aBuckets[ cHashKey ]
+    Local cHashKey
+    Local aBucket
     Local nIndex
+
+    cKey     := ::Normalize( cKey )
+    cHashKey := ::Hash( cKey )
+    aBucket  := ::aBuckets[ cHashKey ]
 
     For nIndex := 1 To Len( aBucket )
         If aBucket[ nIndex, HASHMAP_KEY ] == cKey
@@ -123,14 +199,6 @@ Method Hash( cKey ) Class NGHashMap
     Local nIndex
     Local nHash      := 5381
     Local nKeyLength := Len( cKey )
-
-    If HASHMAP_CMP_IGNORE_CASE $ ::cMode
-        cKey := Upper( cKey )
-    EndIf
-
-    If HASHMAP_CMP_TRIM $ ::cMode
-        cKey := AllTrim( cKey )
-    EndIf
 
     For nIndex := 1 To nKeyLength
         nChar := Asc( SubStr( cKey, nIndex, 1 ) )
@@ -188,7 +256,8 @@ Method Put( cKey, xValue ) Class NGHashMap
         ::Rehash()
     EndIf
 
-    cHashKey   := ::Hash( @cKey )
+    cKey       := ::Normalize( cKey )
+    cHashKey   := ::Hash( cKey )
     aBucket    := ::aBuckets[ cHashKey ]
     lKeyExists := .F.
 
@@ -215,8 +284,6 @@ Return Nil
  * @author Marcelo Camargo
  */
 Method Rehash() Class NGHashMap
-    Local nOldLength := ::nLength
-    Local nOldSize   := ::nSize
     Local aOldBucket := ::aBuckets
     Local nIndex
 
@@ -238,15 +305,20 @@ Return
  * @param cKey {String} - key of element to remove
  * @returns {Logical} whether the value was found and removed
  */
-Method Remove( cKey )
-    Local cHashKey := ::Hash( @cKey )
-    Local aBucket  := ::aBuckets[ cHashKey ]
+Method Remove( cKey ) Class NGHashMap
+    Local cHashKey
+    Local aBucket
     Local nIndex
+
+    cKey     := ::Normalize( cKey )
+    cHashKey := ::Hash( cKey )
+    aBucket  := ::aBuckets[ cHashKey ]
 
     For nIndex := 1 To Len( aBucket )
         If aBucket[ nIndex, HASHMAP_KEY ] == cKey
             aDel( aBucket, nIndex )
             aSize( aBucket, Len( aBucket ) - 1 )
+            ::nLength--
             Return .T.
         EndIf
     Next
