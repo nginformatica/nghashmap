@@ -48,8 +48,8 @@ Static Function PrepareCSV( cFile )
     nHandle := FCreate( BENCHMARK_DIR + '\' + cFile )
 Return nHandle
 
-Static Function Report( nHandle, nCount )
-    FWrite( nHandle, cValToChar( Seconds() - M->nOffset ) + ',' + cValToChar( nCount ) + Chr( 10 ) )
+Static Function Report( nHandle, nStart, nCount )
+    FWrite( nHandle, cValToChar( Seconds() - nStart ) + ',' + cValToChar( nCount ) + Chr( 10 ) )
 Return
 
 Static Function NextWord()
@@ -76,24 +76,26 @@ Static Function PutNGHASH( nHandle, aData )
     Local oMap
     Local nIndex
     Local nRet := 0
+    Local nStart
 
-    oMap := NGHashMap():New( 10000 )
+    oMap := NGHashMap():New( 15000 )
 
-    Private nOffset := Seconds()
     For nIndex := 1 To Len( aData )
+        nStart := Seconds()
         oMap:Put( aData[ nIndex, 1 ], aData[ nIndex, 2 ] )
-        Report( nHandle, ++nRet )
+        Report( nHandle, nStart, ++nRet )
     Next
 Return oMap
 
 Static Function GetNGHASH( nHandle, aData, oMap )
     Local nIndex
     Local nRet := 0
+    Local nStart
 
-    Private nOffset := Seconds()
     For nIndex := 1 To oMap:Length()
+        nStart := Seconds()
         oMap:Get( aData[ nIndex, 1 ] )
-        Report( nHandle, ++nRet )
+        Report( nHandle, nStart, ++nRet )
     Next
 Return
 
@@ -101,22 +103,24 @@ Static Function PutASCAN( nHandle, aData )
     Local aValues := {}
     Local nIndex
     Local nRet := 0
+    Local nStart
 
-    Private nOffset := Seconds()
     For nIndex := 1 To Len( aData )
+        nStart := Seconds()
         aAdd( aValues, { aData[ nIndex, 1 ], aData[ nIndex, 2 ] } )
-        Report( nHandle, ++nRet )
+        Report( nHandle, nStart, ++nRet )
     Next
 Return aValues
 
 Static Function GetASCAN( nHandle, aData, aMap )
     Local nIndex
     Local nRet := 0
+    Local nStart
 
-    Private nOffset := Seconds()
     For nIndex := 1 To Len( aMap )
+        nStart := Seconds()
         aScan( aMap, { |aVal| aVal[ 1 ] == aData[ nIndex, 1 ] } )
-        Report( nHandle, ++nRet )
+        Report( nHandle, nStart, ++nRet )
     Next
 Return
 
@@ -124,13 +128,13 @@ Static Function PutTHASH( nHandle, aData )
     Local oMap
     Local nIndex
     Local nRet := 0
+    Local nStart
 
     oMap := HMNew()
-
-    Private nOffset := Seconds()
     For nIndex := 1 To Len( aData )
+        nStart := Seconds()
         HMSet( oMap, aData[ nIndex, 1 ], aData[ nIndex, 2 ] )
-        Report( nHandle, ++nRet )
+        Report( nHandle, nStart, ++nRet )
     Next
 Return oMap
 
@@ -139,12 +143,13 @@ Static Function GetTHASH( nHandle, aData, oMap )
     Local aList := {}
     Local nRet := 0
     Local xValue
+    Local nStart
 
-    Private nOffset := Seconds()
     HMList( oMap, @aList )
     For nIndex := 1 To Len( aList )
+        nStart := Seconds()
         HMGet( oMap, aData[ nIndex, 1 ], @xValue )
-        Report( nHandle, ++nRet )
+        Report( nHandle, nStart, ++nRet )
     Next
 Return
 

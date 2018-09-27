@@ -7,10 +7,4 @@ set ylabel 'time'
 set xlabel 'n'
 set datafile separator ','
 
-set xrange [1:10]
-
-h(x) = x + log(x)
-a(x) = x ** 3
-
-plot h(x) title 'HashMap ≈ O(1)', \
-     a(x) title 'aScan O(n³)'
+plot '/tmp/get-ascan.csv' using 0:($2 ** 3) smooth sbezier with lines title 'aScan'
