@@ -50,30 +50,37 @@ Static Function Report( nHandle, nTime, nCount )
     FWrite( nHandle, cValToChar( nTime - M->nOffset ) + ',' + cValToChar( nCount ) + Chr( 10 ) )
 Return
 
+Static Function NextWord()
+    Local nLength := Randomize( 4, 12 )
+    Local nIndex
+    Local cWord := ''
+
+    For nIndex := 1 To nLength
+        cWord += Chr( Randomize( 33, 90 ) )
+    Next
+Return cWord
+
 Static Function GenData( aPairs )
     Local nIndex
-    Local nLeft
-    Local nRight
-    Local cKey
+    Local cWord
 
     For nIndex := 1 To 10000
-        nLeft  := Randomize( 1, 65565 )
-        nRight := Randomize( 1, 65565 )
-        cKey   := cValToChar( nLeft ) + cValToChar( nRight )
-        aPairs[ nIndex ] := { cKey, nLeft + nRight }
+        cWord := NextWord()
+        aPairs[ nIndex ] := { cWord, cWord }
     Next
 Return
 
 Static Function GoNGHASH( nHandle, aData )
     Local oMap
     Local nIndex
+    Local nRet := 0
 
     oMap := NGHashMap():New( 10000 )
 
     Private nOffset := Seconds()
     For nIndex := 1 To Len( aData )
         oMap:Put( aData[ nIndex, 1 ], aData[ nIndex, 2 ] )
-        Report( nHandle, Seconds(), oMap:Length() )
+        Report( nHandle, Seconds(), ++nRet )
     Next
 Return
 
