@@ -176,6 +176,24 @@ oMap:Remove( 'tudo' ) // .T.
 oMap:Remove( 'eita' ) // .F.
 ```
 
+## Benchmarks
+
+Os benchmarks foram realizados considerando operações de `GET` e `PUT` com 10000 elementos considerando as implementações de `NGHashMap`, `tHashMap` e busca em array via `aScan`, como costuma ser prática comum (negativa, no entanto) para se trabalhar com dados associativos na linguagem. O source encontra-se em [benchmarks/nghashmap.bench.prw](./benchmarks/nghashmap.bench.prw) e há os arquivos `get.gnu` e `put.gnu` em _GNUPlot_ para gerar os gráficos com a curva de crescimento.
+
+Tanto a `NGHashMap` quanto a `tHashMap` apresentaram mesma complexidade assintótica (constante, `O(1)` amortizado) para encontrar por chave. Busca em array, no entanto, como esperado, apresentou-se linear, `O(n)`. O custo de inserção é maior na `NGHashMap`, mas não cresce de acordo com a tamanho da entrada. Note que os gráficos consideram tempo de execução em segundos no eixo `y`.
+
+- Inserção de dados com chaves
+
+![put](./benchmarks/png/put.png)
+
+- Busca por chave
+
+![get](./benchmarks/png/get.png)
+
+Se formos considerar, então, a situação hipotética de buscas dentro de maps com sub-maps, em 3 níveis, a curva de crescimento e custo de busca em hashmaps continuará constante, enquanto que buscas lineares serão exponenciais:
+
+![arrays](./benchmarks/png/arrays.png)
+
 ## Licença
 
 Licenciado sob MIT.

@@ -31,6 +31,8 @@
 #define CSV_ASCAN 'ascan.csv'
 #define CSV_NGHASHMAP 'nghashmap.csv'
 #define CSV_THASHMAP 'thashmap.csv'
+#define PUT 'put-'
+#define GET 'get-'
 
 Static Function PrepareCSV( cFile )
     Local nHandle
@@ -46,8 +48,8 @@ Static Function PrepareCSV( cFile )
     nHandle := FCreate( BENCHMARK_DIR + '\' + cFile )
 Return nHandle
 
-Static Function Report( nHandle, nTime, nCount )
-    FWrite( nHandle, cValToChar( nTime - M->nOffset ) + ',' + cValToChar( nCount ) + Chr( 10 ) )
+Static Function Report( nHandle, nCount )
+    FWrite( nHandle, cValToChar( Seconds() - M->nOffset ) + ',' + cValToChar( nCount ) + Chr( 10 ) )
 Return
 
 Static Function NextWord()
@@ -70,7 +72,7 @@ Static Function GenData( aPairs )
     Next
 Return
 
-Static Function GoNGHASH( nHandle, aData )
+Static Function PutNGHASH( nHandle, aData )
     Local oMap
     Local nIndex
     Local nRet := 0
@@ -80,11 +82,45 @@ Static Function GoNGHASH( nHandle, aData )
     Private nOffset := Seconds()
     For nIndex := 1 To Len( aData )
         oMap:Put( aData[ nIndex, 1 ], aData[ nIndex, 2 ] )
-        Report( nHandle, Seconds(), ++nRet )
+        Report( nHandle, ++nRet )
+    Next
+Return oMap
+
+Static Function GetNGHASH( nHandle, aData, oMap )
+    Local nIndex
+    Local nRet := 0
+
+    Private nOffset := Seconds()
+    For nIndex := 1 To oMap:Length()
+        oMap:Get( aData[ nIndex, 1 ] )
+        Report( nHandle, ++nRet )
     Next
 Return
 
-Static Function GoTHASH( nHandle, aData )
+Static Function PutASCAN( nHandle, aData )
+    Local aValues := {}
+    Local nIndex
+    Local nRet := 0
+
+    Private nOffset := Seconds()
+    For nIndex := 1 To Len( aData )
+        aAdd( aValues, { aData[ nIndex, 1 ], aData[ nIndex, 2 ] } )
+        Report( nHandle, ++nRet )
+    Next
+Return aValues
+
+Static Function GetASCAN( nHandle, aData, aMap )
+    Local nIndex
+    Local nRet := 0
+
+    Private nOffset := Seconds()
+    For nIndex := 1 To Len( aMap )
+        aScan( aMap, { |aVal| aVal[ 1 ] == aData[ nIndex, 1 ] } )
+        Report( nHandle, ++nRet )
+    Next
+Return
+
+Static Function PutTHASH( nHandle, aData )
     Local oMap
     Local nIndex
     Local nRet := 0
@@ -94,26 +130,60 @@ Static Function GoTHASH( nHandle, aData )
     Private nOffset := Seconds()
     For nIndex := 1 To Len( aData )
         HMSet( oMap, aData[ nIndex, 1 ], aData[ nIndex, 2 ] )
-        Report( nHandle, Seconds(), ++nRet )
+        Report( nHandle, ++nRet )
+    Next
+Return oMap
+
+Static Function GetTHASH( nHandle, aData, oMap )
+    Local nIndex
+    Local aList := {}
+    Local nRet := 0
+    Local xValue
+
+    Private nOffset := Seconds()
+    HMList( oMap, @aList )
+    For nIndex := 1 To Len( aList )
+        HMGet( oMap, aData[ nIndex, 1 ], @xValue )
+        Report( nHandle, ++nRet )
     Next
 Return
 
 User Function NGHMBench()
-    Local nHandleNGHASH := PrepareCSV( CSV_NGHASHMAP )
-    Local nHandleASCAN  := PrepareCSV( CSV_ASCAN )
-    Local nHandleTHASH  := PrepareCSV( CSV_THASHMAP )
+    Local nHandleNGHASH := PrepareCSV( PUT + CSV_NGHASHMAP )
+    Local nHandleASCAN  := PrepareCSV( PUT + CSV_ASCAN )
+    Local nHandleTHASH  := PrepareCSV( PUT + CSV_THASHMAP )
     Local aPairs[ 10000 ]
+    Local oNGValues
+    Local oTValues
+    Local aValues
 
     GenData( @aPairs )
 
-    GoNGHASH( nHandleNGHASH, @aPairs )
-    GoTHASH( nHandleTHASH, @aPairs )
+    oNGValues := PutNGHASH( nHandleNGHASH, @aPairs )
+    oTValues  := PutTHASH( nHandleTHASH, @aPairs )
+    aValues   := PutASCAN( nHandleASCAN, @aPairs )
 
     FClose( nHandleASCAN )
     FClose( nHandleNGHASH )
     FClose( nHandleTHASH )
 
-    CpyS2T( BENCHMARK_DIR + '\' + CSV_NGHASHMAP, 'C:\tmp/' )
-    CpyS2T( BENCHMARK_DIR + '\' + CSV_ASCAN, 'C:\tmp/' )
-    CpyS2T( BENCHMARK_DIR + '\' + CSV_THASHMAP, 'C:\tmp/' )
+    nHandleNGHASH := PrepareCSV( GET + CSV_NGHASHMAP )
+    nHandleASCAN  := PrepareCSV( GET + CSV_ASCAN )
+    nHandleTHASH  := PrepareCSV( GET + CSV_THASHMAP )
+
+    GetNGHASH( nHandleNGHASH, @aPairs, oNGValues )
+    GetTHASH( nHandleTHASH, @aPairs, oTValues )
+    GetASCAN( nHandleASCAN, @aPairs, aValues )
+
+    FClose( nHandleASCAN )
+    FClose( nHandleNGHASH )
+    FClose( nHandleTHASH )
+
+    CpyS2T( BENCHMARK_DIR + '\' + PUT + CSV_NGHASHMAP, 'C:\tmp/' )
+    CpyS2T( BENCHMARK_DIR + '\' + PUT + CSV_ASCAN, 'C:\tmp/' )
+    CpyS2T( BENCHMARK_DIR + '\' + PUT + CSV_THASHMAP, 'C:\tmp/' )
+
+    CpyS2T( BENCHMARK_DIR + '\' + GET + CSV_NGHASHMAP, 'C:\tmp/' )
+    CpyS2T( BENCHMARK_DIR + '\' + GET + CSV_ASCAN, 'C:\tmp/' )
+    CpyS2T( BENCHMARK_DIR + '\' + GET + CSV_THASHMAP, 'C:\tmp/' )
 Return
